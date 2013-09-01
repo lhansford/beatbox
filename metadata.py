@@ -48,6 +48,17 @@ class Metadata():
 		album = self.get_album(audio, format)
 		return (artist, title, album)
 
+	def get_playlist_metadata(self, path):
+		##Only mp3 and ogg for now until i work out a way to get other formats to playback.
+		if path.endswith(".mp3"):
+			audio = MP3(path)
+			format = "mp3"
+		elif path.endswith(".ogg"):
+			audio = OggVorbis(path)
+			format = "ogg"
+		artist = self.get_artist(audio, format)
+		title = self.get_title(audio, format)
+		return (artist, title)
 
 	def get_artist(self, audio, format):
 		if format == "mp3":

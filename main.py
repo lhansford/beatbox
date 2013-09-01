@@ -8,7 +8,7 @@ import player
 
 
 ### FOR TESTING ###
-playlist = ['/Users/luke/Downloads/King Krule/03 Portrait in Black and Blue.mp3', '/Users/luke/Downloads/King Krule/04 Lead Existence.mp3']
+playlist = ['/Users/luke/Downloads/King Krule/03 Portrait in Black and Blue.mp3', '/Users/luke/Downloads/King Krule/04 Lead Existence.mp3', '/Users/luke/Downloads/Belle and Sebastian Discography (1996-2010) V0/Belle and Sebastian-Write About Love (2010)/3. Calculating Bimbo.mp3', '/Users/luke/Downloads/Belle and Sebastian Discography (1996-2010) V0/Belle and Sebastian-Write About Love (2010)/4. I Want the World to Stop.mp3', '/Users/luke/Downloads/Bob Dylan - The Bootleg Series, Vol. 10 - Another Self Portrait (1969-1971) [V0]/Isle of Wight Live 1969/06 - It Ain\'t Me Babe.mp3']
 MAIN_WINDOW_MARGIN = 50
 MAIN_WINDOW_WIDTH = 1000
 MAIN_WINDOW_HEIGHT = 700
@@ -54,7 +54,6 @@ class PlayerGui(QtGui.QWidget):
         self.player = player.Player(self)
         self.create_player_window()
         
-
     def create_player_window(self):
 
         cover_pm = QtGui.QPixmap("images/cover.jpg")
@@ -99,7 +98,6 @@ class PlayerGui(QtGui.QWidget):
 
         self.setGeometry(MARGIN_SIZE, MARGIN_SIZE, 400, 180)
 
-
     def open_file(self):
         """ Opens a file dialog where the user can select a song to play.
 
@@ -136,21 +134,23 @@ class PlayerGui(QtGui.QWidget):
     def play_button_clicked(self):
         if self.media_object.state() == Phonon.PlayingState:
             self.pauseSong()
-            self.play_button.setImage('images/play.png')
-            self.play_button.set_pressed_image('images/play_pressed.png')  
         else:
             self.playSong()
-            self.play_button.setImage('images/pause.png')
-            self.play_button.set_pressed_image('images/pause_pressed.png')
 
     def playSong(self):
         if self.media_object.state() == Phonon.PausedState:
+            self.play_button.setImage('images/pause.png')
+            self.play_button.set_pressed_image('images/pause_pressed.png')
             self.media_object.play()
         elif self.media_object.currentSource != None:
+            self.play_button.setImage('images/pause.png')
+            self.play_button.set_pressed_image('images/pause_pressed.png')
             self.media_object.play()
 
     def pauseSong(self):
         self.media_object.pause()
+        self.play_button.setImage('images/play.png')
+        self.play_button.set_pressed_image('images/play_pressed.png')  
 
     def back_button_clicked(self):
         if self.media_object.state() == Phonon.PausedState:
@@ -173,32 +173,58 @@ class PlayerGui(QtGui.QWidget):
 
     def volume_button_clicked(self):
         pass
-
-
+ 
 class PlaylistGui(QtGui.QWidget):
     def __init__(self, parent=None):
         super(PlaylistGui, self).__init__(parent)
         self.parent = parent
+        self.metadata = self.parent.metadata
+        self.playlist_item_file_data = 4 ### This is an arbitrary int to store and retrieve data within a list item without displaying it.
         self.create_playlist_window()
         
-
     def create_playlist_window(self):
 
-        self.playlist_widget = QtGui.QListWidget(self)
+        self.playlist_widget = QtGui.QListView(self)
+        self.playlist_widget.setDragEnabled(True)
+        self.playlist_widget.setMovement(QtGui.QListView.Free)
+        self.playlist_widget.setDragDropOverwriteMode(False)
+        self.playlist_widget.setDefaultDropAction(QtCore.Qt.MoveAction)
+        self.playlist_widget.setDragDropMode(QtGui.QAbstractItemView.DragDrop)
+        self.model = QtGui.QStandardItemModel(self.playlist_widget)
         self.playlist_widget.resize(300, 300)
+        self.playlist_widget.setIconSize(QtCore.QSize(60, 60))
         self.load_playlist(playlist)
+        self.playlist_widget.setModel(self.model)
         self.playlist_widget.doubleClicked.connect(self.playlist_item_double_clicked)
         self.setGeometry(10, 190, 400, 400) ### WHY THE LAST TWO VALS?
 
-
     def load_playlist(self, playlist):
         """ Loads playlist into the playlist listview"""
-        for item in playlist:
-           self.playlist_widget.addItem(item)
+        for song_file in playlist:
+            newItem = QtGui.QStandardItem()
+            artist, title, album_art = self.get_playlist_item_metadata(song_file)
+            newItem.setText(title + '\n' + artist)
+            newItem.setData(song_file, self.playlist_item_file_data)
+            newItem.setIcon(album_art)
+            newItem.setSizeHint(QtCore.QSize(290, 60))
+            newItem.setDragEnabled(True)
+            newItem.setEditable(False)
+            self.model.appendRow(newItem)
+
+    def get_playlist_item_metadata(self, song_file):
+        artist, title = self.metadata.get_playlist_metadata(song_file)
+        album_art = self.metadata.get_album_cover(song_file)
+        if album_art:
+            with open('temp/cover.jpg', 'wb') as img:
+                img.write(album_art) # write artwork to new image
+            album_art = QtGui.QPixmap("temp/cover.jpg")
+        else:
+            album_art = QtGui.QPixmap("images/cover.jpg")
+        return artist, title, album_art
 
     def playlist_item_double_clicked(self, item):
-        print item.data()
-        self.parent.player_gui.load_song(item.data())
+        song_file = item.data(self.playlist_item_file_data)
+        self.parent.player_gui.load_song(song_file)
         self.parent.player_gui.playSong()
 
 class ImageButton(QtGui.QAbstractButton):
@@ -241,7 +267,6 @@ class ImageButton(QtGui.QAbstractButton):
     def mouseReleaseEvent(self, event):
         self.setImage(self.released_image)
         self.function()
-
 
 
 def main():
