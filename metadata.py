@@ -29,8 +29,18 @@ class Metadata():
 		album_artist = self.get_album_artist(audio, format)
 		publisher = self.get_publisher(audio, format)
 
-		metadata = (artist, title, album, date, genre, track_number,
-		 total_tracks, disc_number, total_discs, album_artist, publisher)
+		metadata = {'Artist':artist,
+			'Track':title,
+			'Album':album,
+			'Year':date,
+			'Genre':genre,
+			'Track Number':track_number,
+			'Total Tracks':total_tracks,
+			'Disc Number':disc_number,
+			'Total Discs':total_discs,
+			'Album Artist':album_artist,
+			'Publisher':publisher,
+			'File Path': path}
 		
 		return metadata
 		
@@ -79,7 +89,10 @@ class Metadata():
 
 	def get_title(self, audio, format):
 		if format == "mp3":
-			return audio["TIT2"][0]
+			try:
+				return audio["TIT2"][0]
+			except:
+				return ""
 		elif format == "flac":
 			try:
 				return audio["title"][0]

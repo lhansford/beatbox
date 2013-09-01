@@ -4,6 +4,7 @@ import sys
 import metadata
 import phonon
 import player
+import build_library
 
 
 
@@ -19,8 +20,21 @@ PLAYER_TEXT_SIZE = 12
 PLAYER_COVER_SIZE = 100
 MARGIN_SIZE = 10
 FONT = 'Helvetica'
-### ----------- ###
+LIBRARY_COLUMNS = [{'Name':'Track', 'Activated':True,'Function': ''},
+    {'Name':'Artist', 'Activated':True,'Function': ''},
+    {'Name':'Album', 'Activated':True,'Function': ''},
+    {'Name':'Year', 'Activated':False,'Function': ''},
+    {'Name':'Genre', 'Activated':False,'Function': ''},
+    {'Name':'Track Number', 'Activated':False,'Function': ''},
+    {'Name':'Total Tracks', 'Activated':False,'Function': ''},
+    {'Name':'Disc Number', 'Activated':False,'Function': ''},
+    {'Name':'Total Discs', 'Activated':False,'Function': ''},
+    {'Name':'Album Artist', 'Activated':False,'Function': ''},
+    {'Name':'Publisher', 'Activated':False,'Function': ''},
+    {'Name':'File Path', 'Activated':True,'Function': ''},
+]
 
+### ----------- ###
 
 class MainGui(QtGui.QMainWindow):
     def __init__(self):
@@ -30,6 +44,7 @@ class MainGui(QtGui.QMainWindow):
         self.metadata = metadata.Metadata()
         self.player_gui = PlayerGui(self)
         self.playlist_gui = PlaylistGui(self)
+        self.library_gui = LibraryGui(self)
         self.create_main_window()
         
     def create_main_window(self):
@@ -226,6 +241,61 @@ class PlaylistGui(QtGui.QWidget):
         song_file = item.data(self.playlist_item_file_data)
         self.parent.player_gui.load_song(song_file)
         self.parent.player_gui.playSong()
+
+class LibraryGui(QtGui.QWidget):
+    def __init__(self, parent=None):
+        super(LibraryGui, self).__init__(parent)
+        self.parent = parent
+        self.metadata = self.parent.metadata
+        self.library = build_library.Library()
+        self.library_files = self.library.scan_all_directories([u"/Volumes/Macintosh HD/Users/luke/Downloads/", u"/Volumes/Seagate Backup Plus Drive 1/Music/"])
+
+        self.create_library_window()
+
+    def create_library_window(self):
+
+        self.library_widget = QtGui.QTableView(self)
+        self.library_widget.resize(650,480)
+        self.library_widget.verticalHeader().hide()
+        self.library_widget.setDragEnabled(True)
+        self.library_widget.clicked.connect(self.select_row)
+        self.library_widget.doubleClicked.connect(self.library_item_double_clicked)
+        self.model = QtGui.QStandardItemModel(self.library_widget)
+        self.load_library(self.library_files)
+        self.library_widget.setModel(self.model)
+        self.set_visible_columns(LIBRARY_COLUMNS)
+        self.setGeometry(340, 10, 1000, 1000)
+
+    def load_library(self, library):
+        """ Loads playlist into the playlist listview"""
+        for song_file in library:
+            items = []
+            song_metadata = self.metadata.get_metadata(song_file)
+            for column in LIBRARY_COLUMNS:
+                item = self.create_table_item(song_metadata[column['Name']])
+                items.append(item)
+            self.model.appendRow(items)
+
+    def set_visible_columns(self, columns):
+        for index, column in enumerate(columns):
+            if not column['Activated']:
+                self.library_widget.setColumnHidden(index, True)
+
+    def library_item_double_clicked(self, item):
+        song_file = item.sibling(item.row(), 11).data()
+        self.parent.player_gui.load_song(song_file)
+        self.parent.player_gui.playSong()
+
+
+    def create_table_item(self, text):
+        table_item = QtGui.QStandardItem()
+        table_item.setDragEnabled(True)
+        table_item.setEditable(False)
+        table_item.setText(text)
+        return table_item
+
+    def select_row(self, item):
+        self.library_widget.selectRow(item.row())
 
 class ImageButton(QtGui.QAbstractButton):
     """
