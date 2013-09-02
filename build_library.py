@@ -47,7 +47,7 @@ class Library():
 			for path in library:
 				md = metadata.get_metadata(path)
 				cursor.execute("INSERT INTO Songs VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-				 (i, path, md['Artist'], md['Track'], md['Album'], md['Year'],
+				 (i, path, md['Artist'], md['Title'], md['Album'], md['Year'],
 				  md['Genre'], md['Track Number'], md['Total Tracks'], md['Disc Number'],
 				  md['Total Discs'], md['Album Artist'], md['Publisher']))
 				i += 1

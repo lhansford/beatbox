@@ -1,8 +1,8 @@
 from PySide.phonon import Phonon
 
 class PhononInstance():
-	def __init__(self, application):
-		self.application = application
+	def __init__(self, parent):
+		self.parent = parent
 
 	def create_media_object(self):
 		""" Creates an instance of Phonon for playing songs in the parent
@@ -10,7 +10,7 @@ class PhononInstance():
 
 		create_media_object(self) -> Phonon.MediaObject
 		"""
-		media_object = Phonon.MediaObject(self.application)
-		audio_output = Phonon.AudioOutput(Phonon.MusicCategory, self.application)
+		media_object = Phonon.MediaObject(self.parent)
+		audio_output = Phonon.AudioOutput(Phonon.MusicCategory, self.parent)
 		Phonon.createPath(media_object, audio_output)
 		return media_object

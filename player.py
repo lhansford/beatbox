@@ -5,6 +5,8 @@ class Player():
     def __init__(self, parent):
         self.parent = parent
         self.metadata = metadata.Metadata()
+        self.shuffle_mode = False ### Change later for loading startup settings
+        self.repeat_mode = False ### Change later for loading startup settings
 
     def load_metadata(self, song_file):
         md = self.metadata.get_now_playing_metadata(song_file)
@@ -24,3 +26,23 @@ class Player():
         #     self.parent.set_album_art('')
         else:
             self.parent.set_album_art('')
+
+    def set_shuffle_mode(self):
+        if self.shuffle_mode:
+            self.shuffle_mode = False
+        else:
+            self.shuffle_mode = True
+
+    def get_shuffle_mode(self):
+        return self.shuffle_mode
+
+    def set_repeat_mode(self):
+        if self.repeat_mode:
+            self.repeat_mode = False
+        else:
+            self.repeat_mode = True
+
+    def get_repeat_mode(self):
+        return self.repeat_mode
+
+    # WHY DOEs flac work?!

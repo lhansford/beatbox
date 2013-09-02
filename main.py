@@ -4,12 +4,14 @@ import sys
 import metadata
 import phonon
 import player
+import playlist
 import build_library
+import random
 
 
 
 ### FOR TESTING ###
-playlist = ['/Users/luke/Downloads/King Krule/03 Portrait in Black and Blue.mp3', '/Users/luke/Downloads/King Krule/04 Lead Existence.mp3', '/Users/luke/Downloads/Belle and Sebastian Discography (1996-2010) V0/Belle and Sebastian-Write About Love (2010)/3. Calculating Bimbo.mp3', '/Users/luke/Downloads/Belle and Sebastian Discography (1996-2010) V0/Belle and Sebastian-Write About Love (2010)/4. I Want the World to Stop.mp3', '/Users/luke/Downloads/Bob Dylan - The Bootleg Series, Vol. 10 - Another Self Portrait (1969-1971) [V0]/Isle of Wight Live 1969/06 - It Ain\'t Me Babe.mp3']
+pl = ['/Users/luke/Downloads/King Krule/03 Portrait in Black and Blue.mp3', '/Users/luke/Downloads/King Krule/04 Lead Existence.mp3', '/Users/luke/Downloads/Cloud Choir - live from a bomb shelter/Cloud Choir - live from a bomb shelter - 02 2.flac', '/Users/luke/Downloads/Belle and Sebastian Discography (1996-2010) V0/Belle and Sebastian-Write About Love (2010)/4. I Want the World to Stop.mp3', '/Users/luke/Downloads/Bob Dylan - The Bootleg Series, Vol. 10 - Another Self Portrait (1969-1971) [V0]/Isle of Wight Live 1969/06 - It Ain\'t Me Babe.mp3']
 MAIN_WINDOW_MARGIN = 50
 MAIN_WINDOW_WIDTH = 1000
 MAIN_WINDOW_HEIGHT = 700
@@ -20,12 +22,12 @@ PLAYER_TEXT_SIZE = 12
 PLAYER_COVER_SIZE = 100
 MARGIN_SIZE = 10
 FONT = 'Helvetica'
-LIBRARY_COLUMNS = [{'Name':'Track', 'Activated':True,'Function': ''},
+LIBRARY_COLUMNS = [{'Name':'Title', 'Activated':True,'Function': ''},
     {'Name':'Artist', 'Activated':True,'Function': ''},
     {'Name':'Album', 'Activated':True,'Function': ''},
-    {'Name':'Year', 'Activated':False,'Function': ''},
-    {'Name':'Genre', 'Activated':False,'Function': ''},
-    {'Name':'Track Number', 'Activated':False,'Function': ''},
+    {'Name':'Year', 'Activated':True,'Function': ''},
+    {'Name':'Genre', 'Activated':True,'Function': ''},
+    {'Name':'Track Number', 'Activated':True,'Function': ''},
     {'Name':'Total Tracks', 'Activated':False,'Function': ''},
     {'Name':'Disc Number', 'Activated':False,'Function': ''},
     {'Name':'Total Discs', 'Activated':False,'Function': ''},
@@ -33,7 +35,7 @@ LIBRARY_COLUMNS = [{'Name':'Track', 'Activated':True,'Function': ''},
     {'Name':'Publisher', 'Activated':False,'Function': ''},
     {'Name':'File Path', 'Activated':True,'Function': ''},
 ]
-
+FILEPATH_DATA_POS = 4
 ### ----------- ###
 
 class MainGui(QtGui.QMainWindow):
@@ -42,6 +44,7 @@ class MainGui(QtGui.QMainWindow):
         self.phonon = phonon.PhononInstance(self)
         self.media_object = self.phonon.create_media_object()
         self.metadata = metadata.Metadata()
+        self.playlist = playlist.Playlist(self)
         self.player_gui = PlayerGui(self)
         self.playlist_gui = PlaylistGui(self)
         self.library_gui = LibraryGui(self)
@@ -64,7 +67,10 @@ class PlayerGui(QtGui.QWidget):
         super(PlayerGui, self).__init__(parent)
 
         self.parent = parent
+        self.playlist = self.parent.playlist
         self.media_object = self.parent.media_object
+        self.media_object.aboutToFinish.connect(self.song_ended)
+        self.song_loaded = None
         self.metadata = self.parent.metadata
         self.player = player.Player(self)
         self.create_player_window()
@@ -102,10 +108,10 @@ class PlayerGui(QtGui.QWidget):
         self.forward_button = ImageButton(self, "images/forward.png", "images/forward_pressed.png", self.forward_button_clicked)
         self.forward_button.setGeometry (PLAYER_WINDOW_WIDTH/7 * 3, PLAYER_COVER_SIZE + 2*MARGIN_SIZE, PLAYER_ICON_SIZE, PLAYER_ICON_SIZE)
 
-        self.shuffle_button = ImageButton(self, "images/shuffle.png", "images/forward_pressed.png", self.shuffle_button_clicked)
+        self.shuffle_button = ToggleButton(self, "images/shuffle.png", "images/shuffle_pressed.png", self.shuffle_button_clicked)
         self.shuffle_button.setGeometry (PLAYER_WINDOW_WIDTH/7 * 4, PLAYER_COVER_SIZE + 2*MARGIN_SIZE, PLAYER_ICON_SIZE, PLAYER_ICON_SIZE)
 
-        self.repeat_button = ImageButton(self, "images/repeat.png", "images/forward_pressed.png", self.repeat_button_clicked)
+        self.repeat_button = ToggleButton(self, "images/repeat.png", "images/repeat_pressed.png", self.repeat_button_clicked)
         self.repeat_button.setGeometry (PLAYER_WINDOW_WIDTH/7 * 5, PLAYER_COVER_SIZE + 2*MARGIN_SIZE, PLAYER_ICON_SIZE, PLAYER_ICON_SIZE)
 
         self.volume_button = ImageButton(self, "images/volume3.png", "images/load_pressed.png", self.volume_button_clicked)
@@ -122,6 +128,7 @@ class PlayerGui(QtGui.QWidget):
         
     def load_song(self, song_file):
         if song_file != "": ##If the user cancels the file dialog it returns as an empty string.
+            self.song_loaded = True
             self.media_object.setCurrentSource(Phonon.MediaSource(song_file))
             self.track_slider.setMediaObject(self.media_object)
             self.player.load_metadata(song_file)
@@ -153,14 +160,19 @@ class PlayerGui(QtGui.QWidget):
             self.playSong()
 
     def playSong(self):
-        if self.media_object.state() == Phonon.PausedState:
+        # if self.media_object.state() == Phonon.PausedState:
+        #     self.play_button.setImage('images/pause.png')
+        #     self.play_button.set_pressed_image('images/pause_pressed.png')
+        #     self.media_object.play()
+        if self.song_loaded != None:
             self.play_button.setImage('images/pause.png')
             self.play_button.set_pressed_image('images/pause_pressed.png')
             self.media_object.play()
-        elif self.media_object.currentSource != None:
-            self.play_button.setImage('images/pause.png')
-            self.play_button.set_pressed_image('images/pause_pressed.png')
-            self.media_object.play()
+        elif self.playlist.get_playlist_length() > 0:
+            self.song_loaded = True
+            self.load_song(self.playlist.get_playlist_item(0))
+            self.playlist.set_current_position(0)
+            self.playSong()
 
     def pauseSong(self):
         self.media_object.pause()
@@ -168,34 +180,83 @@ class PlayerGui(QtGui.QWidget):
         self.play_button.set_pressed_image('images/play_pressed.png')  
 
     def back_button_clicked(self):
-        if self.media_object.state() == Phonon.PausedState:
-            self.media_object.stop()
-        if self.media_object.state() == Phonon.PlayingState:
-            self.media_object.stop()
-            self.media_object.play()
+        if self.media_object.state() == Phonon.PausedState or self.media_object.state() == Phonon.StoppedState:
+            if self.media_object.currentTime() < 5000: ##i.e. 5 secs
+                self.previous_song()
+            else:
+                self.media_object.stop()
+        elif self.media_object.state() == Phonon.PlayingState:
+            if self.media_object.currentTime() < 5000: ##i.e. 5 secs
+                self.previous_song()
+            else:
+                self.media_object.stop()
+                self.media_object.play()
 
     def trackSliderMoved(self):
         position = self.track_slider.value()
 
     def forward_button_clicked(self):
-        pass
+        self.song_ended()
 
     def shuffle_button_clicked(self):
-        pass
+        self.player.set_shuffle_mode()
+
 
     def repeat_button_clicked(self):
-        pass
+        self.player.set_repeat_mode()
 
     def volume_button_clicked(self):
         pass
+
+    def song_ended(self):
+
+        if self.player.get_shuffle_mode():
+            self.next_song_shuffled()
+        else:
+        ## NO SHUFFLE/NO REPEAT/NO SONG LOADED/NO MEDIA LIBRARY CLICKED
+            self.next_song()
+
+    def previous_song(self):
+        position = self.playlist.get_current_position() - 1
+        if position < self.playlist.get_playlist_length() and position >= 0:
+            self.load_song_from_playlist(position)
+        else: ## if it's the first song just set track to start again
+            if self.media_object.state() == Phonon.PlayingState:
+                self.media_object.stop()
+                self.media_object.play()
+            else:
+                self.media_object.stop()
+    def next_song(self):
+        position = self.playlist.get_current_position() + 1
+        if position < self.playlist.get_playlist_length():
+            self.load_song_from_playlist(position)
+        elif self.player.get_repeat_mode():
+            self.load_song_from_playlist(0) ## Go back to start if repeat on
+
+    def next_song_shuffled(self):
+        position = self.playlist.get_current_position()
+        while position == self.playlist.get_current_position():
+            position = random.randint(0, self.playlist.get_playlist_length()-1)
+        self.load_song_from_playlist(position)
+
+    def load_song_from_playlist(self, position):
+        if self.media_object.state() == Phonon.PlayingState: ## This needs to be here rather than above playSong() because load_song creates a pauseState
+            self.load_song(self.playlist.get_playlist_item(position))
+            self.playlist.set_current_position(position)
+            self.playSong()
+        else:
+            self.load_song(self.playlist.get_playlist_item(position))
+            self.playlist.set_current_position(position)
+
  
 class PlaylistGui(QtGui.QWidget):
     def __init__(self, parent=None):
         super(PlaylistGui, self).__init__(parent)
         self.parent = parent
+        self.playlist = self.parent.playlist
         self.metadata = self.parent.metadata
-        self.playlist_item_file_data = 4 ### This is an arbitrary int to store and retrieve data within a list item without displaying it.
         self.create_playlist_window()
+
         
     def create_playlist_window(self):
 
@@ -208,23 +269,28 @@ class PlaylistGui(QtGui.QWidget):
         self.model = QtGui.QStandardItemModel(self.playlist_widget)
         self.playlist_widget.resize(300, 300)
         self.playlist_widget.setIconSize(QtCore.QSize(60, 60))
-        self.load_playlist(playlist)
+        self.load_playlist(pl)
         self.playlist_widget.setModel(self.model)
         self.playlist_widget.doubleClicked.connect(self.playlist_item_double_clicked)
         self.setGeometry(10, 190, 400, 400) ### WHY THE LAST TWO VALS?
 
     def load_playlist(self, playlist):
         """ Loads playlist into the playlist listview"""
-        for song_file in playlist:
-            newItem = QtGui.QStandardItem()
-            artist, title, album_art = self.get_playlist_item_metadata(song_file)
-            newItem.setText(title + '\n' + artist)
-            newItem.setData(song_file, self.playlist_item_file_data)
-            newItem.setIcon(album_art)
-            newItem.setSizeHint(QtCore.QSize(290, 60))
-            newItem.setDragEnabled(True)
-            newItem.setEditable(False)
-            self.model.appendRow(newItem)
+        for song_file in pl:
+            playlist_item = self.create_playlist_item(song_file)
+            self.parent.playlist.append_to_playlist(song_file)
+            self.model.appendRow(playlist_item)
+
+    def create_playlist_item(self, song_file):
+        playlist_item = QtGui.QStandardItem()
+        artist, title, album_art = self.get_playlist_item_metadata(song_file)
+        playlist_item.setText(title + '\n' + artist)
+        playlist_item.setData(song_file, FILEPATH_DATA_POS)
+        playlist_item.setIcon(album_art)
+        playlist_item.setSizeHint(QtCore.QSize(290, 60))
+        playlist_item.setDragEnabled(True)
+        playlist_item.setEditable(False)
+        return playlist_item
 
     def get_playlist_item_metadata(self, song_file):
         artist, title = self.metadata.get_playlist_metadata(song_file)
@@ -238,7 +304,8 @@ class PlaylistGui(QtGui.QWidget):
         return artist, title, album_art
 
     def playlist_item_double_clicked(self, item):
-        song_file = item.data(self.playlist_item_file_data)
+        song_file = self.playlist.get_playlist_item(item.row())
+        self.playlist.set_current_position(item.row())
         self.parent.player_gui.load_song(song_file)
         self.parent.player_gui.playSong()
 
@@ -258,12 +325,15 @@ class LibraryGui(QtGui.QWidget):
         self.library_widget.resize(650,480)
         self.library_widget.verticalHeader().hide()
         self.library_widget.setDragEnabled(True)
+        self.library_widget.setSortingEnabled(True)
         self.library_widget.clicked.connect(self.select_row)
         self.library_widget.doubleClicked.connect(self.library_item_double_clicked)
         self.model = QtGui.QStandardItemModel(self.library_widget)
         self.load_library(self.library_files)
+        self.set_column_headers(LIBRARY_COLUMNS)
         self.library_widget.setModel(self.model)
         self.set_visible_columns(LIBRARY_COLUMNS)
+        # self.library_widget.resizeColumnsToContents()
         self.setGeometry(340, 10, 1000, 1000)
 
     def load_library(self, library):
@@ -272,9 +342,15 @@ class LibraryGui(QtGui.QWidget):
             items = []
             song_metadata = self.metadata.get_metadata(song_file)
             for column in LIBRARY_COLUMNS:
-                item = self.create_table_item(song_metadata[column['Name']])
+                item = self.create_table_item(song_metadata[column['Name']], song_file)
                 items.append(item)
             self.model.appendRow(items)
+
+    def set_column_headers(self, columns):
+        for index, column in enumerate(columns):
+            item = QtGui.QStandardItem()
+            item.setText(column['Name'])
+            self.model.setHorizontalHeaderItem(index, item)
 
     def set_visible_columns(self, columns):
         for index, column in enumerate(columns):
@@ -286,12 +362,12 @@ class LibraryGui(QtGui.QWidget):
         self.parent.player_gui.load_song(song_file)
         self.parent.player_gui.playSong()
 
-
-    def create_table_item(self, text):
+    def create_table_item(self, text, song_file):
         table_item = QtGui.QStandardItem()
         table_item.setDragEnabled(True)
         table_item.setEditable(False)
         table_item.setText(text)
+        table_item.setData(song_file, FILEPATH_DATA_POS)
         return table_item
 
     def select_row(self, item):
@@ -337,6 +413,46 @@ class ImageButton(QtGui.QAbstractButton):
     def mouseReleaseEvent(self, event):
         self.setImage(self.released_image)
         self.function()
+
+class ToggleButton(QtGui.QAbstractButton):
+    """
+    This is a subclass of PyQt's Button widget that displays a card and text.
+    The paintEvent will check the button text to see if it should display the 
+    back or front of the card.
+    """
+
+    def __init__(self, parent, image, toggled_image, function):
+        super(ToggleButton, self).__init__(parent)
+        self.function = function
+        self.untoggled_image = image
+        self.toggled_image = toggled_image
+        self.setImage(image)
+
+
+    def setImage(self, image):
+        """ Set the image of the button
+        setImage(self, str) -> None
+        """       
+        self.image = image
+        self.repaint()
+
+
+    def paintEvent(self, event):
+        """ The function called when self.repaint() is called. Updates the
+        widget with the new image.
+        paintEvent(self, event) -> None
+        """
+        painter = QtGui.QPainter(self)
+        pm = QtGui.QPixmap(self.image)
+        painter.drawPixmap(event.rect(), pm)
+
+    def mousePressEvent(self, event):
+        if self.image == self.untoggled_image:
+            self.setImage(self.toggled_image)
+        else:
+            self.setImage(self.untoggled_image)
+        self.function()
+
 
 
 def main():

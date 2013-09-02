@@ -30,7 +30,7 @@ class Metadata():
 		publisher = self.get_publisher(audio, format)
 
 		metadata = {'Artist':artist,
-			'Track':title,
+			'Title':title,
 			'Album':album,
 			'Year':date,
 			'Genre':genre,
@@ -53,6 +53,9 @@ class Metadata():
 		elif path.endswith(".ogg"):
 			audio = OggVorbis(path)
 			format = "ogg"
+		elif path.endswith(".flac"):
+			audio = FLAC(path)
+			format = "flac"
 		artist = self.get_artist(audio, format)
 		title = self.get_title(audio, format)
 		album = self.get_album(audio, format)
@@ -66,6 +69,9 @@ class Metadata():
 		elif path.endswith(".ogg"):
 			audio = OggVorbis(path)
 			format = "ogg"
+		elif path.endswith(".flac"):
+			audio = FLAC(path)
+			format = "flac"
 		artist = self.get_artist(audio, format)
 		title = self.get_title(audio, format)
 		return (artist, title)
