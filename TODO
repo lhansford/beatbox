@@ -1,0 +1,44 @@
+TODO
+
+
+- ScrollTo in playlist - might need slot/connect to work, i think the code is calling and then getting overridden after
+- 24-Bit FLAC files played distorted
+- Does moving playlist items take long now that you can drag external files? Related to image size?
+
+Level 1 (High):
+
+Level 2 (medium):
+- If database is being modified the update play count function fails.
+- very slow library deletion (see note in function)
+- Indicator for playlist moving - dragevents causing issues
+
+Level 3 (minor):
+- Make all menu buttons functional
+- add cancel function to load dirs progress bar
+- tracks stop when changing metdata while they are playing
+- FLAC/Ogg image metadata
+- Popup when adding files to library showing any broken files.
+
+Level 4 (future):
+- Shuffle and general switching runs a little slow/
+- changeable columns
+- biographies/images from wikipedia
+- more images for artist info (from http://www.last.fm/music/Bob+Dylan/+images/2767945)
+- Discography
+- podcasts
+- mobile devices
+- changeable colours
+- Get word wrap into Playlist items (might require a new item style)
+
+- SORTING
+	- Library sorting ignore 'The'
+	- Sort track length properly
+
+TAGS
+	M4a
+	-Can't write track or disc numbers
+	All rating tags
+
+AT END
+
+-check for unneccessary selfs
